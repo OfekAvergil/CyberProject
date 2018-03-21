@@ -1,0 +1,80 @@
+
+Const adTypeBinary = 1
+Const adSaveCreateOverWrite = 2
+
+'read binary file and return bytes array'
+function readBytes(file)
+  set inStream = WScript.CreateObject("ADODB.Stream")
+  inStream.Open
+  inStream.type = adTypeBinary
+  inStream.LoadFromFile(file)
+  readBytes = inStream.Read()
+end function
+
+'read text file and return string'
+function readText(file)
+  readText = CreateObject("Scripting.FileSystemObject").OpenTextFile(file).ReadAll()
+end function
+
+'writes bytes to binary file'
+function writeBytes(file, bytes)
+  Set outStream = CreateObject("ADODB.Stream")
+  outStream.Type = adTypeBinary
+  outStream.Open
+  outStream.Write bytes
+  outStream.SaveToFile file, adSaveCreateOverWrite
+end function
+
+'write text (ascii) to file'
+function writeText(file, txt)
+  Set outStream = CreateObject("ADODB.Stream")
+  outStream.CharSet = "ascii"
+  outStream.Open
+  outStream.WriteText txt
+  outStream.SaveToFile file, adSaveCreateOverWrite
+end function
+
+
+
+'encode byte array to base64 string'
+function encodeBase64(bytes)
+  Set domElement = CreateObject("Microsoft.XMLDOM").createElement("tmp")
+  domElement.DataType = "bin.base64"
+  domElement.NodeTypedValue = bytes
+  encodeBase64 = domElement.Text
+end function
+
+'decode base64 string to byte array'
+function decodeBase64(base64)
+  Set domElement = CreateObject("Microsoft.XMLDOM").createElement("tmp")
+  domElement.DataType = "bin.base64"
+  domElement.Text = base64
+  decodeBase64 = domElement.NodeTypedValue
+end function
+
+
+'=============================================================='
+
+'script duration timer
+StartTime = Timer()
+
+'check for arguments'
+if WScript.Arguments.Count < 2 then
+	msgbox "Missing arguments!" & vbCrLf & "Usage: script encode/decode filename"
+	WScript.Quit
+end if
+
+action = WScript.Arguments(0)
+file = WScript.Arguments(1)
+
+if action = "encode" then
+	writeText file & ".base64", encodeBase64(readBytes(file))
+elseif action = "decode" then
+	writeBytes Replace(file,".base64",""),  decodeBase64(readText(file))
+end if
+
+'calculate script duration time
+TotalTime = Timer() - StartTime
+
+msgbox "Finished " & replace(action,"code","coding") & " " & file & vbCrLf & _
+		"Total time (min:sec): " & (TotalTime \ 60) & ":" & (TotalTime mod 60)
